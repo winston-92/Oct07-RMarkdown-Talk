@@ -1,0 +1,311 @@
+---
+# Courtesy of Fridtjof Thomas, PhD @ UTHSC
+title: 'Example 1'
+author: Winston
+date: 2021-10-06
+output:
+  html_document:
+    code_folding: hide
+    toc: true # table of content true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+    depth: 3  # up to three depths of headings (#, ## and ###) default for toc
+    number_sections: FALSE  ## if you want number sections at each table header
+    theme: journal # one of "default", "cerulean", "journal", "flatly",
+                   # "readable", "spacelab", "united", "cosmo", "lumen",
+                   # "paper", "sandstone", "simplex", "yeti"
+    self_contained: true
+---
+
+## Image Insertion
+![Remember Me?](C:/Users/winston/Desktop/MS_Research/Images/slide1.png)
+
+# Setup
+```{r Setup, include=FALSE, echo=TRUE}
+knitr::opts_chunk$set(fig.width = 8, collapse = TRUE, fig.height = 6)
+knitr::opts_chunk$set(include = TRUE, echo = TRUE, warning = FALSE, message=FALSE)
+#options(width = 800)
+```
+
+#### Libraries
+```{r Libraries, include=TRUE}
+library(DMCFB); library(ggplot2)
+library(ggplot2) # used for plotting
+library(gtsummary) # creates html formatted tables WORKS GREAT with Markdown
+set.seed(01101992)
+```
+
+# Show and Tell
+To generate a blank R code block use "CTRL+ALT+I" <br>
+- You cannot name R chunks Identical things
+- no spaces in the name
+```{r Blank-R-Code}
+# I am blank (This text not included)
+```
+
+```{r EVAL1, eval=TRUE, include=TRUE, echo=TRUE}
+print("I printed something")
+```
+
+
+```{r EVAL2, eval=FALSE, include=TRUE, echo=TRUE}
+print("I did not print something")
+```
+
+
+## Plotting Functions
+  - visualize simulated data in a meaningful way
+  - Scatter plot of Group Beta Value Means
+  - Smooth plot of Group Beta Value Means
+    - very similar to DMCFB output
+```{r Beta-Plot-Function}
+meth_smooth = function(methc, g1, g2, title, alpha, alphas, size = 1.5){
+  methyl = as.data.frame(matrix(ncol = 4, nrow = (nrow(methc)*2)))
+  colnames(methyl) = c("Mean", "CpG", "Group", "Location")
+  methyl$Mean[1:nrow(methc)] = apply(methc[,g1], 1, mean)
+  methyl$Mean[(nrow(methc)+1):nrow(methyl)] = apply(methc[,g2], 1, mean)
+  methyl$CpG = rep(1:nrow(methc),2)
+  methyl$Group = c(rep('G1', nrow(methc)), rep('G2', nrow(methc)))
+  ggplot(data = methyl, aes(x = CpG, y = Mean, color = Group)) + ggtitle(title) +
+    geom_smooth(method = 'loess', formula = 'y~x', se = F, size = 1) + 
+    geom_point(size = size, shape = 16, alpha = alpha) + 
+    scale_color_manual(values = c('#F8766D', '#619CFF'))}
+
+meth_scat = function(methc, g1, g2, title, alpha){
+  methyl = as.data.frame(matrix(ncol = 4, nrow = (nrow(methc)*2)))
+  colnames(methyl) = c("Mean", "CpG", "Group", "Location")
+  methyl$Mean[1:nrow(methc)] = apply(methc[,g1], 1, mean)
+  methyl$Mean[(nrow(methc)+1):nrow(methyl)] = apply(methc[,g2], 1, mean)
+  methyl$CpG = rep(1:nrow(methc),2)
+  methyl$Group = c(rep('G1', nrow(methc)), rep('G2', nrow(methc)))
+  ggplot(data = methyl, aes(x = CpG, y = Mean, color = Group)) + ggtitle(title) +
+    geom_point(size = 1.5, shape = 16, alpha = alpha) +
+    scale_color_manual(values = c('#F8766D', '#619CFF'))}
+
+meth_hist = function(methc, g1, g2, title, facet = NULL){
+  methyl = as.data.frame(matrix(ncol = 4, nrow = (nrow(methc)*2)))
+  colnames(methyl) = c("Mean", "CpG", "Group", "Location")
+  methyl$Mean[1:nrow(methc)] = apply(methc[,g1], 1, mean)
+  methyl$Mean[(nrow(methc)+1):nrow(methyl)] = apply(methc[,g2], 1, mean)
+  methyl$CpG = rep(1:nrow(methc),2)
+  methyl$Group = c(rep('G1', nrow(methc)), rep('G2', nrow(methc)))
+  if(!is.null(facet)){ggplot(data = methyl, aes(x = Mean, fill = Group)) +
+      ggtitle(title) + geom_histogram(binwidth = 0.01) + 
+    facet_wrap(~Group, nrow = 2) + 
+      scale_color_manual(values = c('#F8766D', '#619CFF'))}else{
+      ggplot(data = methyl, aes(x = Mean, fill = Group)) +
+          ggtitle(title) + geom_histogram(binwidth = 0.01) +
+          scale_color_manual(values = c('#F8766D', '#619CFF'))}}
+
+meth_fail = function(methc, dmc, g1, g2, CpG = NULL, title, alpha){
+  methyl = as.data.frame(matrix(ncol = 4, nrow = (nrow(methc)*2)))
+  colnames(methyl) = c("Mean", "CpG", "Group", "Location")
+  methyl$Mean[1:nrow(methc)] = apply(methc[,g1], 1, mean)
+  methyl$Mean[(nrow(methc)+1):nrow(methyl)] = apply(methc[,g2], 1, mean)
+  if(is.null(CpG)){methyl$CpG = rep(1:nrow(methc),2)}else{methyl$CpG = rep(CpG, 2)}
+  methyl$Group = c(rep('G1', nrow(methc)), rep('G2', nrow(methc)))
+  f = ifelse(dmc[,1] != dmc[,2], T, F)
+  fail = rep(f,2)
+  methyl$Group = ifelse(fail == T, "Misidentified", methyl$Group)
+  ggplot(data = methyl, aes(x = CpG, y = Mean, color = Group)) + ggtitle(title) +
+    geom_point(size = 1.5, shape = 16, alpha = alpha) + 
+    scale_color_manual(values = c('#F8766D', '#619CFF', 'gold'))}
+```
+
+## Part 1
+1. ML model $logit(β_t, _g, _i) = log(β_t, _g, _i/(1 − β_t, _g, _i)) \\ = x(γ_0 + δ_g + υ_g, _i) + η1 log(n_t, _g, _i + 1)$
+2. The Bayesian model is $$P(y|n, \beta)P(\beta |x, z, γ_0 ,δ_g ,υ_g, _i, η)P(γ_0)P(δ_g)P(υ_g, _i)P(η)$$
+3. Links
+  - <https://www.bioconductor.org/packages/release/bioc/html/DMCFB.html>
+  - <https://onlinelibrary.wiley.com/doi/10.1111/biom.12965>
+
+### Simulation 0
+This first simulation contains 500 CpG sites with a total sample number of 16. <br>
+The first 300 CpG's are differential, with columns 1 - 8 being drawn from a beta distribution with $\alpha = 0.2$ and $\beta =  5$. <br>
+This simulated data will then be run through DMCFB.
+```{r Beta-Sim1, message=FALSE, warning=FALSE}
+nr = 500
+nc = 16
+metht0 = matrix(rep(1, nr*nc), nrow = nr, ncol = nc)
+
+methc1_1 = matrix(rbeta(8*300, 0.2, 5), nrow = 300, ncol = 8)
+methc1_2 = matrix(rbeta(8*300, 5, 0.2), nrow = 300, ncol = 8)
+methc3 =  matrix(rbeta(16*200, 1,1), nrow = 200, ncol = 16)
+meth = cbind(methc1_1, methc1_2); methc0 = rbind(meth, methc3)
+
+title = 'G1: B(0.2, 5) \nG2: B(5, 0.2)'
+meth_scat(methc = methc0, g1 = 1:8, g2 = 9:16, title = title, alpha = 0.5)
+meth_hist(methc = methc0, g1 = 1:8, g2 = 9:16, title = title)
+r1 = GRanges(rep('chr1', nr), IRanges(1:nr, width = 2), strand = "*")
+names(r1) = 1:nr
+cd1 = DataFrame(Group = rep(c('G1','G2'), each = nc/2), 
+                row.names = LETTERS[1:nc])
+methl = methc0/metht0
+input = cBSDMC(rowRanges = r1, methReads = methc0, totalReads = metht0, 
+               methLevels = methl, colData = cd1)
+output0 = findDMCFB(input,
+                   bwa = 10, bwb = 10, nBurn = 50, nMC = 50, nThin = 1,
+                   alpha = 0.05, nCores = 6, pSize = 500, sfiles = FALSE)
+plotDMCFB(output0)
+```
+
+### Analysis
+```{r No-Spaces-in-Title}
+dmc0 = data.frame(True = c(rep(1, 300),  # section 1 -> differential
+                           rep(0, 200))) # section 2 - non-differential
+dmc0$Predicted = rowData(output0)$DMCs
+
+p0 = round(length(which(dmc0[,1] != dmc0[,2]))/nr,3)*100
+
+meth_smooth(methc = methc0, g1 = 1:8, g2 = 9:16, alpha = 0.5, title = "Gene 0")                       
+meth_fail(methc = methc0, dmc = dmc0, g1 = 1:8, g2 = 9:16,
+          title = paste0("Miss-Identified:", p0, '%'), alpha = 0.6)
+```
+
+As you can see in the above image, the model failed to identify `r paste0(p0,"%")` immediately adjacent to the differential CpG's.
+
+
+## Part 2
+```{r Load-Data, include=FALSE}
+load(file = 'C:/Users/winston/Desktop/MS_Research/Report_2021-10-06/analysis/data_trial_2021-10-06.16-59-05.RData')
+info = read.csv('C:/Users/winston/Desktop/MS_Research/Report_2021-10-06/analysis/info_trial_2021-10-06.16-59-05.csv',header = T)
+```
+
+### Demonstration of GTSumary
+```{r By-trt}
+# Set a compact theme
+theme_gtsummary_compact()
+# Undo theme:reset_gtsummary_theme()
+# The include list controls the order of the variables in the table
+# You only need to change the variable order in that list
+# To remove a variable from the table, remove it from ALL lists
+# t in bold_p stands for threshold of bolding -> default = 0.05
+tb_trt = tbl_summary(d,
+  by = trt,
+  label = list(trt ~ 'Treatment',
+    age ~ 'Age',
+    marker ~ 'Marker',
+    stage ~ 'T Stage',
+    grade ~ 'T Grade',
+    response ~ 'Response',
+    death ~ 'Death',
+    ttdeath ~ 'Time to Death'),
+  type = list(age ~ 'continuous',
+    marker ~ 'continuous',
+    ttdeath ~ 'continuous'),
+  statistic = list(all_continuous() ~'{mean} ({sd}), [{min},{max}]'),
+  missing_text = 'Missing', include = c(
+'age',
+    'marker',
+    'ttdeath',
+    'trt',
+    'response',
+    'death',
+    'stage',
+    'grade'),
+  digits =list(trt ~ c(0,0),
+               age ~ c(2,2,2,2),
+               marker ~ c(2,2,2,2),
+               stage ~ c(0,0),
+               grade ~ c(0,0),
+               response ~ c(0,0),
+               death ~ c(0,0),
+               ttdeath ~ c(2,2,2,2)))
+
+tb_trt = bold_labels(tb_trt)
+
+param_trt = add_p(tb_trt,
+      test = list(all_continuous() ~ 't.test',
+                  all_categorical() ~ 'chisq.test'),
+      test.args = list(all_tests('t.test') ~ list(
+        var.equal = F, alternative = 'two.sided', paired = F),
+        all_tests('chisq.test') ~ list(simulate.p.value = T)),
+      pvalue_fun = function(x)style_pvalue(x, digits = 3)) %>% bold_p(t = 0.05)
+
+nparam_trt = add_p(tb_trt,
+      test = list(all_continuous() ~ 'wilcox.test',
+                  all_categorical() ~ 'fisher.test'),
+      test.args = list(all_tests('wilcox.test') ~ list(
+        alternative = 'two.sided', paired = F, exact = F)),
+        #all_tests('fisher.test') ~ list(simulate.pvalue = T)),
+      pvalue_fun = function(x)style_pvalue(x, digits = 3)) %>% bold_p(t = 0.05)
+
+param_trt = modify_caption(param_trt, '**Parametric Summary by trt**')
+nparam_trt = modify_caption(nparam_trt, '**Non-Parametric Summary by trt**')
+param_trt;nparam_trt
+```
+
+# Automation
+![](C:/Users/winston/Desktop/MS_Research/Images/slide2.png)
+![](C:/Users/winston/Desktop/MS_Research/Images/slide3.png)
+![](C:/Users/winston/Desktop/MS_Research/Images/slide4.png)
+
+```{r Automation-Example, eval=FALSE, include=TRUE, echo=FALSE}
+author = "'Winston Miller'"
+ex = paste("---",
+           paste0("title: ", "'Example 2'"),
+           paste0("Author: ", author),
+           "---",
+           "Above is the YAML Header <br>",
+           "Below is some R code",
+           "```{r, echo=TRUE}",
+           "library(ggplot2) # used for plotting",
+           "library(ggsci) # calls color palettes for plots",
+           paste0("load(file = 'C:/Users/winston/Desktop/MS_Research",
+           "/Report_2021-10-06/analysis/data_trial_2021-10-06.16-59-05.RData')"),
+           paste(
+             "colr = '#E64B35FF'",
+             "col_vline = '#3C5488FF'",
+             "title = 'Treatment'",
+             "p_trt = ggplot(data = d, aes(x = trt, fill = trt)) +",
+             "geom_bar(width = 1, stat = 'count', na.rm = T) +",
+             "   stat_count(aes(label = scales::percent(..count../sum(..count..))),",
+             "              geom = 'text', color = 'white', size = 5,",
+             "              position = position_stack(vjust = 0.5), na.rm = T) +",
+             "   theme_classic() + ggtitle(title) + scale_y_continuous(expand = c(0,0)) +",
+             "   scale_fill_npg(name = 'Treatment', labels = levels(d$trt)) +",
+             "   scale_x_discrete(na.translate = F) +",
+             "   xlab('Treatment') + ylab('Count')",
+             sep = "\n"),
+           "p_trt",
+           "```",
+           sep = "\n")
+cat(ex)
+write(ex, file = 'C:/Users/winston/Desktop/MS_Research/Example2.Rmd')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

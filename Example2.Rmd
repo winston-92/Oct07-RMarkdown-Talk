@@ -1,0 +1,24 @@
+---
+title: 'Example 2'
+Author: 'Winston Miller'
+---
+Above is the YAML Header <br>
+Below is some R code
+```{r, echo=TRUE}
+library(ggplot2) # used for plotting
+library(ggsci) # calls color palettes for plots
+load(file = 'C:/Users/winston/Desktop/MS_Research/Report_2021-10-06/analysis/data_trial_2021-10-06.16-59-05.RData')
+colr = '#E64B35FF'
+col_vline = '#3C5488FF'
+title = 'Treatment'
+p_trt = ggplot(data = d, aes(x = trt, fill = trt)) +
+geom_bar(width = 1, stat = 'count', na.rm = T) +
+   stat_count(aes(label = scales::percent(..count../sum(..count..))),
+              geom = 'text', color = 'white', size = 5,
+              position = position_stack(vjust = 0.5), na.rm = T) +
+   theme_classic() + ggtitle(title) + scale_y_continuous(expand = c(0,0)) +
+   scale_fill_npg(name = 'Treatment', labels = levels(d$trt)) +
+   scale_x_discrete(na.translate = F) +
+   xlab('Treatment') + ylab('Count')
+p_trt
+```
